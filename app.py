@@ -3,6 +3,8 @@ import pandas as pd
 from typing import Tuple, Optional
 from PIL import Image
 
+from agent.implementation import stream_graph_updates
+
 def process_dataset(file) -> Optional[pd.DataFrame]:
     """Load dataset from uploaded file"""
     try:
@@ -17,11 +19,25 @@ def process_dataset(file) -> Optional[pd.DataFrame]:
 
 def query_data(dataset: pd.DataFrame, question: str) -> Tuple[str, Image.Image]:
     """
-    This function should call your agent to process the question and generate visualization
-    You'll need to implement this in a separate script and import it
+    Call agent to process the question and generate visualization
     """
-    # Placeholder - replace with actual agent call
-    return "Please implement the agent response logic", None
+    # Set the global df in the implementation module
+    import agent.implementation
+    agent.implementation.df = dataset
+    
+    # Get response from agent
+    response = stream_graph_updates(question)
+    
+    # Check if visualization was generated
+    try:
+        visualization = Image.open("figure.png")
+    except:
+        visualization = None
+    
+    if 'final_answer' in response:
+        return response['final_answer'].final_answer, visualization
+    return "Failed to generate response", None
+
 
 def main():
     with gr.Blocks() as demo:

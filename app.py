@@ -44,8 +44,20 @@ def main():
         gr.Markdown("# Data Analysis Assistant")
         
         with gr.Row():
-            file_input = gr.File(label="Upload your CSV or Excel file")
-            dataset_status = gr.Textbox(label="Dataset Status", interactive=False)
+            with gr.Column():
+                file_input = gr.File(
+                    label="Upload your CSV or Excel file"
+                )
+                dataset_status = gr.Textbox(label="Dataset Status", interactive=False)
+        
+        # Add Examples component after the file input
+        gr.Examples(
+            examples=[
+                "data/sales-data-sample.csv"
+            ],
+            inputs=file_input,
+            label="Example Datasets"
+        )
         
         # Add DataFrame preview component
         dataset_preview = gr.Dataframe(label="Dataset Preview", interactive=False)

@@ -1,5 +1,7 @@
 # Data Analysis Assistant with LLM
 
+A short demo on how this app was created.
+
 ![Data Analysis Assistant Demo](assets/demo.gif)
 
 A powerful data analysis application that combines the capabilities of Large Language Models (LLM) with interactive data visualization. Users can upload their datasets and ask questions in natural language to get insights and visualizations.
@@ -21,7 +23,6 @@ A powerful data analysis application that combines the capabilities of Large Lan
   - OpenAI GPT-4 for natural language understanding
   - Pandas for data manipulation
   - Matplotlib for visualization generation
-- **Agent Architecture**: Custom implementation using LangGraph for structured conversation flow
 
 ## Installation
 

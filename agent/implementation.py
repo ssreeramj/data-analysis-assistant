@@ -1,74 +1,43 @@
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
-import io
-import operator
-import os
 import pprint as pp
-import sys
-import traceback
+from typing import Annotated, Any, Callable, List, Optional, Type
 
-
-import pandas as pd
 import matplotlib.pyplot as plt
 import openai
-
-from typing import Annotated, List, Callable, Any, Optional, Type
-
+import pandas as pd
+from dotenv import load_dotenv
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_experimental.utilities import PythonREPL
+from langchain_openai import ChatOpenAI
+from langgraph.constants import END, START
+from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
-from pydantic import BaseModel, Field
-
-from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph
-from langgraph.constants import START, END
-
-from langchain_core.prompts import ChatPromptTemplate
-
-from langchain_experimental.utilities import PythonREPL
-
-from langsmith import traceable
-
-# Import the necessary components
-from rich.console import Console
-from rich.prompt import Prompt
-
 from agent.stub import CustomAgent
-from dotenv import load_dotenv
-
 
 load_dotenv()
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
-# Initialize a Rich text console
-console = Console()
-
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
-# setup langsmith
-
-os.environ["LANGSMITH_TRACING"]="true"
-os.environ["LANGSMITH_ENDPOINT"]="https://api.smith.langchain.com"
-os.environ["LANGSMITH_API_KEY"]="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"
-os.environ["LANGSMITH_PROJECT"]="pr-this-sultan-14"
 
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
 def get_data_description(df_):
     data_desc = [(col_name, df_[col_name].dtypes.name) for col_name in df_.columns]
     return data_desc
 
+
 df = None
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 # Fill with your LLM id. For example, if you have an OpenAI connection called "myopenai", LLM_ID can be "openai:myopenai:gpt-4o"
 # To get the list of LLM ids, you can use project.list_llms() (see above)
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 # Data model
 class PythonCode(BaseModel):
     """Schema for the python pandas code."""
+
     prefix: str = Field(description="Description of the problem and approach")
     imports: str = Field(description="ONLY the import statements from code block.")
     code: str = Field(description="Code block not including import statements")
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 code_gen_sys_prompt = """You are an excellent python coder specializing in writing code for data \
 manipulation using Pandas library. Answer the user question based on the below provided data description. {data_desc}\
 Ensure any code you provide can be executed with all required imports and variables defined, and \
@@ -77,22 +46,29 @@ Structure your answer with a description of the code solution. Then list the imp
 And finally list the functioning code block.
 """
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", code_gen_sys_prompt),
-    ("placeholder", "{messages}"),
-])
+prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", code_gen_sys_prompt),
+        ("placeholder", "{messages}"),
+    ]
+)
 
 code_gen_llm = prompt | llm.with_structured_output(PythonCode)
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 class PlotOutputCode(BaseModel):
     """Schema for plotting code."""
-    viz_choice: str = Field(..., description="Choice of visualization type")
-    viz_choice_reason: str = Field(..., description="Reasoning for the choice of visualization")
-    imports: str = Field(..., description="ONLY the import statements from code block.")
-    code: str = Field(..., description="Python code block not including import statements")
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+    viz_choice: str = Field(..., description="Choice of visualization type")
+    viz_choice_reason: str = Field(
+        ..., description="Reasoning for the choice of visualization"
+    )
+    imports: str = Field(..., description="ONLY the import statements from code block.")
+    code: str = Field(
+        ..., description="Python code block not including import statements"
+    )
+
+
 viz_agent_system_prompt_text = """You are tasked with generating Python code using the matplotlib library \
 to visualize the output of a pandas operation. You will be given query asked by the user and the output \
 generated by running the pandas code.
@@ -140,17 +116,20 @@ Remember to tailor the visualization to the specific data provided in the pandas
 If you need any clarification about the data, please ask before generating the code."""
 
 
-viz_agent_sys_prompt = ChatPromptTemplate.from_messages([
-    ("system", viz_agent_system_prompt_text),
-    ("placeholder", "{messages}"),
-])
+viz_agent_sys_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", viz_agent_system_prompt_text),
+        ("placeholder", "{messages}"),
+    ]
+)
 
 
 viz_agent = viz_agent_sys_prompt | llm.with_structured_output(PlotOutputCode)
 
 
 # ## Build the graph
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
+
 class GraphState(TypedDict):
     """
     Represents the state of our graph.
@@ -174,7 +153,7 @@ class GraphState(TypedDict):
     final_answer: str
     viz_code: str
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 ## Parameters
 
 # Max tries
@@ -183,7 +162,7 @@ MAX_ITERATIONS = 3
 # -------------------------------------------------------------------------------- NOTEBOOK-CELL: MARKDOWN
 # ### Node functions
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 def generate_pandas_code(state: GraphState) -> dict:
     """
     Generate a pandas code solution
@@ -225,12 +204,12 @@ def generate_pandas_code(state: GraphState) -> dict:
     # Increment
     iterations = iterations + 1
     return {
-        "pandas_code": code_solution, 
-        "messages": messages, 
-        "iterations": iterations
+        "pandas_code": code_solution,
+        "messages": messages,
+        "iterations": iterations,
     }
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 def check_pandas_code(state: GraphState) -> dict:
     """
     Check Pandas code
@@ -282,7 +261,12 @@ def check_pandas_code(state: GraphState) -> dict:
     print("---NO CODE TEST FAILURES---")
     python_repl = PythonREPL(_locals={"df": df})
     code_response = python_repl.run(imports + "\n" + code)
-    messages += [("user", f"The pandas code was executed successfully and generated the following response: {code_response}")] 
+    messages += [
+        (
+            "user",
+            f"The pandas code was executed successfully and generated the following response: {code_response}",
+        )
+    ]
     return {
         "pandas_code": code_solution,
         "messages": messages,
@@ -291,55 +275,63 @@ def check_pandas_code(state: GraphState) -> dict:
         "error": "no",
     }
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 class FinalAnswer(BaseModel):
-    final_answer: str = Field(..., description="Final answer to user query based on the results of python code execution")
+    final_answer: str = Field(
+        ...,
+        description="Final answer to user query based on the results of python code execution",
+    )
 
 
 def generate_final_answer(state: GraphState) -> dict:
     """
     Generate Final Answer
-    
+
     Args:
         state (dict): The current graph state
 
     Returns:
         state (dict): New key added to state, generation
-    
+
     """
     print(f"---GENERATING FINAL ANSWER---")
     messages = state["messages"]
     errors = state["error"]
-    
+
     if errors == "no":
-    
         final_ans_llm = llm.with_structured_output(FinalAnswer)
 
         final_answer = final_ans_llm.invoke(messages)
 
         return {"final_answer": final_answer}
-    
-    else:
-        return {"final_answer": "There is an issue in generating answer to this query. Please try after some time."}
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+    else:
+        return {
+            "final_answer": "There is an issue in generating answer to this query. Please try after some time."
+        }
+
+
 def generate_viz_code(state: GraphState) -> dict:
     """
     Generate matplotlib code to visualize
     """
     print("---GENERATING VISUALIZATION CODE---")
-    
+
     pandas_output = state["pandas_code_output"]
     messages = state["messages"]
     iterations = state["iterations"]
     user_query = messages[0][1]
-    
+
     viz_agent = viz_agent_sys_prompt | llm.with_structured_output(PlotOutputCode)
-    
-    response = viz_agent.invoke({
-        "messages": [("human", f"User Question: {user_query}\n\nOutput: {pandas_output}")]
-    })
-    
+
+    response = viz_agent.invoke(
+        {
+            "messages": [
+                ("human", f"User Question: {user_query}\n\nOutput: {pandas_output}")
+            ]
+        }
+    )
+
     messages += [
         (
             "assistant",
@@ -351,7 +343,7 @@ def generate_viz_code(state: GraphState) -> dict:
     iterations = iterations + 1
     return {"viz_code": response, "messages": messages, "iterations": iterations}
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 def check_viz_code(state: GraphState) -> dict:
     """
     Check visualization code
@@ -378,7 +370,9 @@ def check_viz_code(state: GraphState) -> dict:
         exec(imports)
     except Exception as e:
         print("---VIZ CODE IMPORT CHECK: FAILED---")
-        error_message = [("user", f"Your visualization code solution failed the import test: {e}")]
+        error_message = [
+            ("user", f"Your visualization code solution failed the import test: {e}")
+        ]
         messages += error_message
         return {
             "viz_code": code_solution,
@@ -392,7 +386,12 @@ def check_viz_code(state: GraphState) -> dict:
     except Exception as e:
         print("---VIZ CODE BLOCK CHECK: FAILED---")
         print(e)
-        error_message = [("user", f"Your visualization code solution failed the code execution test: {e}")]
+        error_message = [
+            (
+                "user",
+                f"Your visualization code solution failed the code execution test: {e}",
+            )
+        ]
         messages += error_message
         return {
             "viz_code": code_solution,
@@ -402,7 +401,7 @@ def check_viz_code(state: GraphState) -> dict:
 
     # No errors
     print("---NO VIZ CODE TEST FAILURES---")
-    messages += [("user", f"The visualzation code was executed successfully,")] 
+    messages += [("user", f"The visualzation code was executed successfully,")]
     return {
         "viz_code": code_solution,
         "messages": messages,
@@ -410,7 +409,7 @@ def check_viz_code(state: GraphState) -> dict:
         "error": "no",
     }
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 def pandas_code_cond(state: GraphState) -> str:
     """
     Determines whether to generate a final answer and plot.
@@ -423,16 +422,16 @@ def pandas_code_cond(state: GraphState) -> str:
     """
     error = state["error"]
     iterations = state["iterations"]
-    
-    if error == 'no' or iterations == MAX_ITERATIONS:
+
+    if error == "no" or iterations == MAX_ITERATIONS:
         print(f"---DECISION: GENERATE FINAL ANSWER WITH {iterations} iterations---")
         return "generate_final_answer"
-    
-    if error == 'yes':
+
+    if error == "yes":
         print("---DECISION: GENERATE PANDAS CODE AGAIN---")
         return "generate_pandas_code"
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 def viz_code_cond(state: GraphState) -> str:
     """
     Determines whether to end graph or not.
@@ -445,16 +444,16 @@ def viz_code_cond(state: GraphState) -> str:
     """
     error = state["error"]
     iterations = state["iterations"]
-    
+
     if error == "no" or iterations == MAX_ITERATIONS:
         print("---DECISION: END GRAPH---")
         return END
-    
+
     else:
         print("---DECISION: GENERATE VIZ CODE AGAIN---")
         return "generate_viz_code"
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 agent = CustomAgent(
     state_schema=GraphState,
     impl=[
@@ -470,11 +469,11 @@ agent = CustomAgent(
 
 compiled_agent = agent.compile()
 
-# -------------------------------------------------------------------------------- NOTEBOOK-CELL: CODE
+
 def stream_graph_updates(question):
     if df is None:
         raise ValueError("No DataFrame has been loaded yet")
-    
+
     response = compiled_agent.invoke(
         {"messages": [("user", question)], "iterations": 0, "error": ""}
     )

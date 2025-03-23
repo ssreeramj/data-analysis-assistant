@@ -66,16 +66,16 @@ gradio app.py
 
 ## Project Structure
 
-data-analysis-assistant/
-├── app.py # Main Gradio application
-├── agent/
-│ ├── implementation.py # LLM agent implementation
-│ └── stub.py # Agent interface definitions
-├── data/ # Example datasets
-│ └── sales-data-sample.csv
-├── assets/ # Images and demo files
-│ └── demo.gif
-└── requirements.txt # Project dependencies
+data-analysis-assistant/  
+├── app.py # Main Gradio application  
+├── agent/  
+│ ├── implementation.py # LLM agent implementation  
+│ └── stub.py # Agent interface definitions  
+├── data/ # Example datasets  
+│ └── sales-data-sample.csv  
+├── assets/ # Images and demo files  
+│ └── demo.gif  
+└── requirements.txt # Project dependencies  
 
 ## How It Works
 

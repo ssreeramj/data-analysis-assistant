@@ -17,7 +17,7 @@ A powerful data analysis application that combines the capabilities of Large Lan
 
 - **Frontend**: Gradio (Python web framework for ML applications)
 - **Backend**: 
-  - LangChain for LLM orchestration
+  - LangGraph for LLM orchestration
   - OpenAI GPT-4 for natural language understanding
   - Pandas for data manipulation
   - Matplotlib for visualization generation
@@ -27,26 +27,25 @@ A powerful data analysis application that combines the capabilities of Large Lan
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/data-analysis-assistant.git
+git clone https://github.com/ssreeramj/data-analysis-assistant.git
 cd data-analysis-assistant
 ```
 
 2. Create a virtual environment and activate it:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 3. Install the required packages:
 ```bash
-pip install -r requirements.txt
+uv pip install -r uv.lock
 ```
 
 4. Set up environment variables:
 Create a `.env` file in the root directory with the following:
 ```env
 OPENAI_API_KEY=your_api_key_here
-LANGSMITH_API_KEY=your_langsmith_key_here
 ```
 
 ## Usage
@@ -100,13 +99,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Acknowledgments
 
 - Built with [Gradio](https://gradio.app/)
-- Powered by [Langgraph](https://langchain.com/)
-- Boilerplate Langgraph Code [Langgraph Code](https://build.langchain.com/)
+- Powered by [LangGraph](https://www.langchain.com/langgraph)
+- Boilerplate Langgraph Code [LangGraph Code](https://build.langchain.com/)
 - Visualization using [Matplotlib](https://matplotlib.org/)
 
 ## Support
 
 If you encounter any issues or have questions, please:
-1. Check the [Issues](https://github.com/yourusername/data-analysis-assistant/issues) page
+1. Check the [Issues](https://github.com/ssreeramj/data-analysis-assistant/issues) page
 2. Create a new issue if your problem isn't already listed
 
